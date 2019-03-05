@@ -21,25 +21,24 @@ colors = {  None: {"free": free},
 window = Tk()
 
 class Jeu:
-    def __init__(self, window):
+    def __init__(self, window, firstPlayer):
         # Setup the window layout
         self.controls = Frame(window, width = WIDTH)
         self.controls.pack()
-        self.currentPlayer = IntVar()
-        self.currentPlayer.set(1)
+        self.currentPlayer = firstPlayer
         Label(self.controls, text="     Jeu de la saucisse - Mode local     ").pack()
-        Radiobutton(self.controls, text="Joueur 1", variable=self.currentPlayer,
-                    value=1, indicatoron=0, state="disabled").pack(side = LEFT)
-        Radiobutton(self.controls, text="Joueur 2", variable=self.currentPlayer,
-                    value=2, indicatoron=0, state="disabled").pack(side = LEFT)
+        self.P1_label = Label(self.controls, text="Joueur 1")
+        self.P2_label = Label(self.controls, text="Joueur 2")
+        self.P1_label.pack(side = LEFT)
+        self.P2_label.pack(side = LEFT)
+        self.setPlayerLabel()
         Button(self.controls, text="Quitter", command=window.quit).pack(side = RIGHT)
 
         self.canvas = Canvas(window, width=WIDTH, height=HEIGHT)
         self.canvas.pack()
 
-        self.completeTurn = window.event_add("<EndTurn>")
         self.canvas.bind("<Button-1>", self.click)
-        self.canvas.bind("<EndTurn>", self.endTurn)
+        self.canvas.bind("<<EndTurn>>", self.endTurn)
 
         # Setup the grid and create the 32 points
         self.grid = list()
@@ -53,14 +52,28 @@ class Jeu:
                 else:
                     self.grid[i].append(Link())
 
+    def setPlayerLabel(self):
+        if self.currentPlayer == 1:
+            self.P1_label.config(background = P1_selected)
+            self.P2_label.config(background = free)
+        else:
+            self.P1_label.config(background = free)
+            self.P2_label.config(background = P2_selected)
+
+
     def click(self, event):
         (x,y) = event.x, event.y
         a = self.canvas.find_overlapping(x, y, x, y)
         if len(a) == 1:
-            Point.get_point(a[0]).select(self.currentPlayer.get())
+            Point.get_point(a[0]).select(self.currentPlayer)
 
-    def endTurn(event):
-        pass
+    def endTurn(self, event):
+        if self.currentPlayer == 1 :
+            self.currentPlayer = 2
+        else:
+            self.currentPlayer = 1
+        self.setPlayerLabel()
+        print("Changement de joueur")
 
 class Point:
     points = [] # List of every created point
@@ -116,7 +129,6 @@ class Point:
 
         return False
 
-
     def unselect(self):
         self.state = "free"
         self.change_color()
@@ -127,9 +139,10 @@ class Point:
             for point in Point.selected_points:
                 point.state = "linked"
                 point.change_color(player)
+
+
             Point.selected_points.clear()
-
-
+            jeu.canvas.event_generate("<<EndTurn>>")
 
     def change_color(self,player = None):
         """Set the color of the point"""
@@ -142,5 +155,5 @@ class Link:
         self.rep = None # Tkinter object index on canvas
         self.linked = False
 
-jeu = Jeu(window)
+jeu = Jeu(window, 1)
 window.mainloop()
