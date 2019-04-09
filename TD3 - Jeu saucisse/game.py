@@ -8,6 +8,8 @@ class GameEngine:
         # Initialize the grid containing Points and Links
         # Points are on the case where (i+j)%2 == 0
         self.grid = []
+        self.player1 = player1
+        self.player2 = player2
         self.currentPlayer = player1
         self.selected_points = []
 
@@ -32,7 +34,9 @@ class GameEngine:
                             return self.grid[x][y]
         return None
 
-    def selector(self, point):
+    def selector(self, pointCoords):
+        (i, j) = pointCoords
+        point = self.grid[i][j]
         if point.state == "selected":
             self.selected_points.remove(point)
             point.unselect()
@@ -41,13 +45,23 @@ class GameEngine:
             self.selected_points.append(point)
             point.select()
             if len(self.selected_points) == 3:
-                self.end_move()
+                return [(point.i, point.j) for point in self.selected_points]
             return True
         return False
 
     def playable(self, point):
+        """Check if a point can be played"""
         if point.state == "free":
-            if len(self.selected_points) == 0:
+            if len(self.selected_points) > 0:
+                previous_point = self.selected_points[-1]
+                a, b = point.i, point.j
+                c, d = previous_point.i, previous_point.j
+                if ((abs(a-c) == 2 and (b-d) == 0 and self.grid[(c-a)//2 +a][b].linked == False) # The points are on the same row
+                    or (abs(a-c) == 1 and abs(b-d) == 1) # The points are on a diagonal
+                    or (abs(a-c) == 0 and abs(b-d) == 2 and self.grid[a][(d-b)//2 + b].linked == False)): # The points are on the same column
+                    return True
+
+            elif len(self.selected_points) == 0:
                 voisin1 = self.accessible_neighbor(point)
                 if voisin1 != None:
                     voisin1.state = "selected"
@@ -56,23 +70,44 @@ class GameEngine:
                         voisin1.state = "free"
                         return True
                     else :
-                        self.state = "selected"
+                        point.state = "selected"
                         voisin2 = self.accessible_neighbor(voisin1)
                         if voisin2 != None:
                             voisin1.state = "free"
-                            self.state = "free"
+                            point.state = "free"
                             return True
                     voisin1.state = "free"
-                    self.state = "free"
+                    point.state = "free"
 
-            elif len(self.selected_points) > 0:
-                a, b = point.i, point.j
-                previous_point = self.selected_points[-1]
-                c, d = previous_point.i, previous_point.j
-                if ((abs(a-c) == 2 and (b-d) == 0 and self.grid[(c-a)//2 +a][b].linked == False) # The points are on the same row
-                    or (abs(a-c) == 1 and abs(b-d) == 1) # The points are on a diagonal
-                    or (abs(a-c) == 0 and abs(b-d) == 2 and self.grid[a][(d-b)//2 + b].linked == False)): # The points are on the same column
-                    return True
+        return False
+
+        # if point.state == "free":
+        #     if len(self.selected_points) == 0:
+        #         voisin1 = self.accessible_neighbor(point)
+        #         if voisin1 != None:
+        #             voisin1.state = "selected"
+        #             voisin2 = self.accessible_neighbor(point)
+        #             if voisin2 != None:
+        #                 voisin1.state = "free"
+        #                 return True
+        #             else :
+        #                 self.state = "selected"
+        #                 voisin2 = self.accessible_neighbor(voisin1)
+        #                 if voisin2 != None:
+        #                     voisin1.state = "free"
+        #                     self.state = "free"
+        #                     return True
+        #             voisin1.state = "free"
+        #             self.state = "free"
+        #
+        #     elif len(self.selected_points) > 0:
+        #         a, b = point.i, point.j
+        #         previous_point = self.selected_points[-1]
+        #         c, d = previous_point.i, previous_point.j
+        #         if ((abs(a-c) == 2 and (b-d) == 0 and self.grid[(c-a)//2 +a][b].linked == False) # The points are on the same row
+        #             or (abs(a-c) == 1 and abs(b-d) == 1) # The points are on a diagonal
+        #             or (abs(a-c) == 0 and abs(b-d) == 2 and self.grid[a][(d-b)//2 + b].linked == False)): # The points are on the same column
+        #             return True
 
     def check_possible_moves(self):
         for i in range(len(self.grid)):
@@ -99,12 +134,12 @@ class GameEngine:
 
         self.selected_points.clear()
 
-        if self.currentPlayer == player1 :
-            self.currentPlayer = player2
+        if self.currentPlayer == self.player1 :
+            self.currentPlayer = self.player2
         else:
-            self.currentPlayer = player1
+            self.currentPlayer = self.player1
 
-        self.check_possible_moves()
+        return self.check_possible_moves()
 
 
 class Point:

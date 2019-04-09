@@ -1,4 +1,10 @@
 from tkinter import *
+from time import sleep
+from tkinter.messagebox import *
+
+# GAME CONSTANTS
+GRID_WIDTH = 9
+GRID_HEIGHT = 7
 
 # GRAPHICAL CONSTANTS
 RADIUS = 10
@@ -20,54 +26,85 @@ colors = {  None: {"free": free},
 
 
 class GUI:
-    def __init__(self, window, player1, player2):
-        self.game = game
+    def __init__(self, player1, player2):
+        self.player1 = player1
+        self.player2 = player2
 
         # Setup the window layout
-        self.controls = Frame(window, width = WIDTH)
+        self.window = Tk()
+        self.controls = Frame(self.window, width = WIDTH)
         self.controls.pack()
-        self.currentPlayer = player
-        Label(self.controls, text="     Jeu de la saucisse     ").pack()
+        self.currentPlayer = player1
+        Label(self.controls, text="Jeu de la saucisse").pack()
         self.P1_label = Label(self.controls, text=player1)
         self.P2_label = Label(self.controls, text=player2)
         self.P1_label.pack(side = LEFT)
         self.P2_label.pack(side = LEFT)
         self.setPlayerLabel()
-        Button(self.controls, text="Quitter", command=window.quit).pack(side = RIGHT)
+        # Button(self.controls, text="Quitter", command=self.window.quit).pack(side = RIGHT)
 
-        self.canvas = Canvas(window, width=WIDTH, height=HEIGHT)
+        self.canvas = Canvas(self.window, width=WIDTH, height=HEIGHT)
         self.canvas.pack()
 
+        self.grid = []
         self.points = []
 
         for i in range(GRID_WIDTH):
+            self.grid.append([])
             for j in range(GRID_HEIGHT):
                 if (i+j) % 2 == 0:
                     rep = self.canvas.create_oval(XMIN+i*DIST-RADIUS, YMIN+j*DIST-RADIUS, XMIN+i*DIST+RADIUS,YMIN+j*DIST+RADIUS, fill=free)
-                    self.points.append(Point_rep(i, j, rep))
+                    self.grid[i].append(Point_rep(i, j, rep))
+                    self.points.append(self.grid[i][j])
+                else :
+                    self.grid[i].append([])
 
-
-        self.canvas.bind("<Button-1>", self.click)
+    def nbCurrentPlayer(self):
+        if self.currentPlayer == self.player1:
+            return 1
+        elif self.currentPlayer == self.player2:
+            return 2
+        else:
+            raise ValueError("Cannot give the number of the current player")
 
     def setPlayerLabel(self):
-        if self.game.currentPlayer == 1:
+        if self.currentPlayer == self.player1 :
             self.P1_label.config(background = P1_selected)
             self.P2_label.config(background = free)
-        else:
+        elif self.currentPlayer == self.player2:
             self.P1_label.config(background = free)
             self.P2_label.config(background = P2_selected)
 
-    def click(self, event):
-        (x,y) = event.x, event.y
-        a = self.canvas.find_overlapping(x, y, x, y)
-        if len(a) == 1:
-            rep = a[0]
-            for point in self.points:
-                if point.rep == rep:
-                    return (point.i, point.j)
+    def setPointState(self, coords, state):
+        """Change point state and set color accordingly"""
+        global colors
+        print("setPointState called !",self.currentPlayer, coords,state)
+        (i,j) = coords
+        self.canvas.itemconfig(self.grid[i][j].rep, fill = colors[self.nbCurrentPlayer()][state])
+
+    def wrongSelection(self, coords):
+        (i,j) = coords
+        rep = self.grid[i][j].rep
+        self.canvas.scale(rep, i*DIST+XMIN, j*DIST+YMIN, 1.5, 1.5)
+        self.canvas.after(100, lambda : self.canvas.scale(rep, i*DIST+XMIN, j*DIST+YMIN, 1/1.5, 1/1.5))
+
+    def changeCurrentPlayer(self):
+        print("change f*cking player")
+        """Change the current player to who is the turn"""
+        self.currentPlayer = self.player1 if self.currentPlayer == self.player2 else self.player2
+        self.setPlayerLabel()
+
+    def printEndGame(self):
+        winner = self.player1 if self.currentPlayer == self.player2 else self.player1
+        showinfo("Fin du jeu !", icon="info", message = winner + " a gagné !", command=self.window.quit)
+
+
 
 class Point_rep:
     def __init__(self, i, j, rep):
         self.i = i
         self.j = j
         self.rep = rep
+
+    def change_color(self):
+        pass

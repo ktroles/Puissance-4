@@ -7,7 +7,7 @@ from random import choice
 from PodSixNet.Server import Server
 from PodSixNet.Channel import Channel
 
-from game0 import GameEngine
+from game import GameEngine
 
 class ClientChannel(Channel):
     """
@@ -28,22 +28,40 @@ class ClientChannel(Channel):
         self._server.PrintPlayers()
         self.Send({"action":"start"})
 
+    def Network_selectPoint(self, data):
+        print("SELECTED !")
+        nickname = data["nickname"]
+        partners = data["partners"]
+        coords = (i,j) = data["pointCoords"]
+        print(coords)
+
+        select = s.games[partners].selector(coords)
+
+        if select == True :
+            [p.Send({"action":"pointState", "pointCoords": coords, "state" : self._server.games[partners].grid[i][j].state}) for p in self._server.players if p.nickname in partners]
+        elif type(select) is list and len(select) == 3:
+            [p.Send({"action":"endTurn", "pointList":select}) for p in self._server.players if p.nickname in partners]
+            if s.games[partners].end_move() == False: # no more playable points
+                [p.Send({"action":"endGame"}) for p in self._server.players if p.nickname in partners]
+        else:
+            [p.Send({"action":"wrongSelection", "pointCoords": coords}) for p in self._server.players if p.nickname in partners]
+
 class MyServer(Server):
     channelClass = ClientChannel
 
     def __init__(self, *args, **kwargs):
         Server.__init__(self, *args, **kwargs)
         self.players = {}
-        self.games = []
+        self.games = {}
 
         self.players_tk = tk.StringVar()
+        self.players_tk.set("Il n'y a personne...")
         interface = tk.LabelFrame(Window, text = "Server - Saucisse", padx=10, pady=10)
         interface.pack()
-        PlayerLabel = tk.Label(interface, textvariable=self.players_tk)
-        PlayerLabel.pack
+        PlayerLabel = tk.Label(interface, textvariable=self.players_tk).pack()
         tk.Button(interface, text="Launch a game", command=self.LaunchGame).pack()
 
-        print('Saucisse server launched')
+        print('Saucisse server launched :)')
 
     def Connected(self, channel, addr):
         self.AddPlayer(channel)
@@ -59,6 +77,7 @@ class MyServer(Server):
     def DelPlayer(self, player):
         print("Deleting Player " + player.nickname + " at "+str(player.addr))
         del self.players[player]
+        self.PrintPlayers()
 
     def SendToOthers(self, data):
         [p.Send({"action":"newPoint", "newPoint" : data["newPoint"]}) for p in self.players if p.nickname != data["who"]]
@@ -76,9 +95,10 @@ class MyServer(Server):
             player2 = choice(players)
             while player2 == player1:
                 player2 = choice(players)
-            self.games.append(GameEngine(player1.nickname, player2.nickname))
-            [p.Send({"action":"startGame", "players":(player1.nickname, player2.nickname)}) for p in players]
-
+            player1 = player1.nickname
+            player2 = player2.nickname
+            self.games[(player1, player2)] = GameEngine(player1, player2)
+            [p.Send({"action":"startGame", "players":(player1, player2)}) for p in players]
 
 # get command line argument of server, port
 if len(sys.argv) != 2:
