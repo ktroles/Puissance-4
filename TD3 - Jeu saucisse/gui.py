@@ -1,3 +1,5 @@
+# coding: utf-8
+
 from tkinter import *
 from time import sleep
 from tkinter.messagebox import *
@@ -95,9 +97,9 @@ class GUI:
         self.setPlayerLabel()
 
     def printEndGame(self):
-        winner = self.player1 if self.currentPlayer == self.player2 else self.player1
-        showinfo("Fin du jeu !", icon="info", message = winner + " a gagné !", command=self.window.quit)
-
+        winner = self.player1 if self.currentPlayer == self.player2 else self.player2
+        showinfo("Fin du jeu !", icon="info", message = winner + " a gagné !")
+        self.window.destroy()
 
 
 class Point_rep:

@@ -1,3 +1,5 @@
+# coding: utf-8
+
 import sys
 from time import sleep
 from sys import stdin, exit
@@ -13,9 +15,9 @@ HEIGHT=200
 R=5
 
 # STATE CONSTANTS
-INITIAL=0
-ACTIVE=1
-DEAD=-1
+INITIAL = 0
+ACTIVE = 1
+DEAD = -1
 PLAYING = 2
 WAITING = 3
 
@@ -24,9 +26,9 @@ class Client(ConnectionListener):
     def __init__(self, host, port):
         self.Connect((host, port))
         self.state=INITIAL
-        print("Client started")
-        print("Ctrl-C to exit")
-        print("Enter your nickname: ")
+        print("Bienvenu au jeu de la saucise !")
+        print("Appuyez sur Ctrl-C pour fermer cette fenêtre")
+        print("Quel est votre prénom ? ")
         nickname=str(stdin.readline().rstrip("\n"))
         self.nickname=nickname
         connection.Send({"action": "nickname", "nickname": nickname})
@@ -34,7 +36,7 @@ class Client(ConnectionListener):
         self.Loop()
 
     def Network_connected(self, data):
-        print("You are now connected to the server")
+        print("Vous êtes maintenant connecté au serveur ! server")
 
     def Loop(self):
         connection.Pump()
@@ -52,11 +54,6 @@ class Client(ConnectionListener):
             sleep(0.001)
         exit()
 
-    def Network_newPoint(self, data):
-        (x,y)=data["newPoint"]
-        myCanvas.create_oval(x-R,y-R,x+R,y+R)
-        myCanvas.update()
-
     def Network_error(self, data):
         print('error:', data['error'][1])
         connection.Close()
@@ -66,6 +63,7 @@ class Client(ConnectionListener):
         exit()
 
     def Network_startGame(self, data):
+        """Start a game with a partner"""
         (player1, player2) = self.currentGamePartners = data["players"]
 
         print("Should start a game with {} and {}".format(player1, player2))
@@ -77,18 +75,6 @@ class Client(ConnectionListener):
 
         self.game_ui = GUI(player1, player2)
         self.game_ui.canvas.bind("<Button-1>", self.click)
-
-    def click(self, event):
-        if self.state == PLAYING:
-            (x,y) = event.x, event.y
-            a = self.game_ui.canvas.find_overlapping(x, y, x, y)
-            if len(a) == 1:
-                rep = a[0]
-                for point in self.game_ui.points:
-                    if point.rep == rep:
-                        connection.Send({"action":"selectPoint", "nickname" : self.nickname,
-                                "partners": self.currentGamePartners, "pointCoords" : (point.i,point.j)})
-                        print("Trying to select ", point.i, " ", point.j)
 
     def Network_pointState(self, data):
         print("Network PointState called")
@@ -103,11 +89,25 @@ class Client(ConnectionListener):
 
     def Network_endGame(self,data):
         self.game_ui.printEndGame()
-
+        self.state = ACTIVE
 
     def Network_wrongSelection(self, data):
         coords = data["pointCoords"]
         self.game_ui.wrongSelection(coords)
+
+    def click(self, event):
+        (x,y) = event.x, event.y
+        a = self.game_ui.canvas.find_overlapping(x, y, x, y)
+        if len(a) == 1:
+            rep = a[0]
+            for point in self.game_ui.points:
+                if point.rep == rep:
+                    if self.state == PLAYING:
+                        connection.Send({"action":"selectPoint", "nickname" : self.nickname,
+                                "partners": self.currentGamePartners, "pointCoords" : (point.i,point.j)})
+                        print("Trying to select ", point.i, " ", point.j)
+                    else:
+                        self.game_ui.wrongSelection((point.i, point.j))
 
 #########################################################
 
@@ -120,14 +120,9 @@ host, port = sys.argv[1].split(":")
 c = Client(host, int(port))
 
 Window=Tk()
-myCanvas = Canvas(Window, width=WIDTH, height = HEIGHT,bg='white')
+myCanvas = Canvas(Window, width=WIDTH, height = HEIGHT, bg='white')
 myCanvas.pack(side=TOP)
 
-def drawNewPoint(evt):
-    myCanvas.create_oval(evt.x-R,evt.y-R,evt.x+R,evt.y+R)
-    c.Send({"action":"newPoint","newPoint" : (evt.x,evt.y)})
-
-myCanvas.bind("<Button-1>",drawNewPoint)
 Quit=Button(Window,text='Quitter',command = c.quit)
 Quit.pack(side=BOTTOM)
 

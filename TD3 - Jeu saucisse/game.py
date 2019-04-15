@@ -1,3 +1,5 @@
+# coding: utf-8
+
 # GAME CONSTANTS
 GRID_WIDTH = 9
 GRID_HEIGHT = 7
