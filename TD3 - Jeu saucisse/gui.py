@@ -101,7 +101,6 @@ class GUI:
         showinfo("Fin du jeu !", icon="info", message = winner + " a gagné !")
         self.window.destroy()
 
-
 class Point_rep:
     def __init__(self, i, j, rep):
         self.i = i

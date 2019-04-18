@@ -27,8 +27,10 @@ class ClientChannel(Channel):
         self.nickname = data["nickname"]
         self._server.PrintPlayers()
         # TODO: Check nickname, if already connected, cry, else send ranking
-        self._server.scores[self.nickname] = 1500
-        self.Send({"action":"start", "ranking":self._server.scores})
+        self._server.rating[self.nickname] = 1000
+        self.Send({"action":"start", "ranking":self._server.rating})
+        self._server.showRanking()
+        self._server.sendRanking()
 
     def Network_selectPoint(self, data):
         nickname = data["nickname"]
@@ -52,10 +54,31 @@ class ClientChannel(Channel):
         else:
             [p.Send({"action":"wrongSelection", "pointCoords": coords}) for p in self._server.players if p.nickname in partners]
 
+
+    def Network_launchGame(self, data):
+        """Check if a game can be launched"""
+        player1 = data["players"][0] # player1 is the player asking for the game
+        player2 = data["players"][1] # player2 is the opponent player1 chooses
+        confirmation = data["confirmation"]
+
+        print("LaunchGame, player1 = {}, player2 = {}".format(player1,player2))
+        launchGame = False
+        if confirmation == False:
+            [p.Send({"action":"message", "messageType":"GameRefused","opponent":player1}) for p in self._server.players if p.nickname == player2]
+        elif confirmation == None:
+            if abs(self._server.rating[player1] - self._server.rating[player2]) > 300:
+                [p.Send({"action": "message", "messageType":"RatingGapTooHigh"}) for p in self._server.players if p.nickname == player1]
+            elif abs(self._server.rating[player1] - self._server.rating[player2]) > 200:
+                [p.Send({"action": "message", "messageType": "AskLaunchGame", "asker": player1}) for p in self._server.players if p.nickname == player2]
+            else:
+                launchGame = True
+
+        if launchGame or confirmation:
+            self._server.games[(player1, player2)] = GameEngine(player1, player2)
+            [p.Send({"action":"startGame", "players":(player1, player2)}) for p in self._server.players if p.nickname in [player1, player2]]
+
 class MyServer(Server):
     channelClass = ClientChannel
-
-    INIT_SCORE = 1500
 
     def __init__(self, *args, **kwargs):
         Server.__init__(self, *args, **kwargs)
@@ -64,10 +87,10 @@ class MyServer(Server):
         self.players = {}
         self.games = {}
 
-        self.scores = {}
-        if os.path.isfile("ranking.game"):
-            with open("ranking.game", "rb") as ranking:
-                self.scores = pickle.load(ranking)
+        self.rating = {}
+        # if os.path.isfile("ranking.game"):
+        #     with open("ranking.game", "rb") as ranking:
+        #         self.rating = pickle.load(ranking)
 
         interface = tk.LabelFrame(Window, text = "Jeu de la Saucisse - Serveur", padx=10, pady=10)
         interface.pack()
@@ -77,7 +100,6 @@ class MyServer(Server):
 
         self.controls = tk.LabelFrame(interface, text="Contrôles", padx=10, pady=10)
         self.controls.grid(row=1, column=0, sticky="new")
-        tk.Button(self.controls, text="Lancer une partie aléatoire", command=self.LaunchGame).pack(side = tk.LEFT)
         tk.Button(self.controls, text="Arrêter le serveur", command=self.Stop).pack(side = tk.LEFT)
         tk.Button(self.controls, text="Send ranking DEBUG", command=self.sendRanking).pack(side=tk.LEFT)
         self.showRanking()
@@ -90,7 +112,6 @@ class MyServer(Server):
     def AddPlayer(self, player):
         print("New Player connected")
         self.players[player] = True
-        self.sendRanking()
 
     def PrintPlayers(self):
         print("players' nicknames :",[p.nickname for p in self.players])
@@ -113,15 +134,11 @@ class MyServer(Server):
         self.active = False
         print("See you!")
 
-    def changeScore(self):
-        with open("ranking.game","wb") as ranking:
-            pickle.dump(self.scores)
-
     def showRanking(self):
         self.ranking.destroy()
         self.ranking = tk.Frame(self.ranking_container)
         self.ranking.pack(side=tk.LEFT)
-        sorted_rank = sorted(self.scores.items(), key = lambda x:x[1])
+        sorted_rank = sorted(self.rating.items(), key = lambda x:x[1])
 
         for i in range(len(sorted_rank)):
             tk.Label(self.ranking, text=str(i+1)).grid(row=i, column=0)
@@ -130,20 +147,38 @@ class MyServer(Server):
 
     def sendRanking(self):
         print('Sent!')
-        [p.Send({"action":"showRanking", "ranking":self.scores}) for p in self.players]
+        [p.Send({"action":"showRanking", "ranking":self.rating}) for p in self.players]
 
 
-    def LaunchGame(self):
-        if len(self.players) == 2:
-            players = list(self.players.keys())
-            player1 = choice(players)
-            player2 = choice(players)
-            while player2 == player1:
-                player2 = choice(players)
-            player1 = player1.nickname
-            player2 = player2.nickname
-            self.games[(player1, player2)] = GameEngine(player1, player2)
-            [p.Send({"action":"startGame", "players":(player1, player2)}) for p in players]
+    # def network_LaunchGame(self, data):
+    #     """Check if a game can be launched"""
+    #     # if len(self.players) == 2:
+    #     #     players = list(self.players.keys())
+    #     #     player1 = choice(players)
+    #     #     player2 = choice(players)
+    #     #     while player2 == player1:
+    #     #         player2 = choice(players)
+    #     #     player1 = player1.nickname
+    #     #     player2 = player2.nickname
+    #     print("LaunchGame")
+    #     player1 = data["players"][0] # player1 is the player asking for the game
+    #     player2 = data["players"][1] # player2 is the opponent player1 chooses
+    #     confirmation = data["confirmation"]
+    #
+    #     launchGame = False
+    #     if confirmation == False:
+    #         player2.Send({"action":"message", "messageType":"GameRefused","opponent":player1})
+    #     elif confirmation == None:
+    #         if abs(self.rating[player1] - self.rating[player2]) > 300:
+    #             [p.Send({"action": "message", "messageType":"RatingGapTooHigh"}) for p in self.players if p.nickname == player1]
+    #         elif abs(self.rating[player1] - self.rating[player2]) > 200:
+    #             [p.Send({"action": "message", "messageType": "AskLaunchGame", "asker": player1}) for p in self.players if p.nickname == player2]
+    #         else:
+    #             launchGame = True
+    #
+    #     if launchGame or confirmation:
+    #         self.games[(player1, player2)] = GameEngine(player1, player2)
+    #         [p.Send({"action":"startGame", "players":(player1, player2)}) for p in self.players if p.nickname in [player1, player2]]
 
 # get command line argument of server, port
 if len(sys.argv) != 2:

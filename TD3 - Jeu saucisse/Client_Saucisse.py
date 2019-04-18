@@ -72,17 +72,22 @@ class Client(ConnectionListener):
         exit()
 
     def Network_showRanking(self,data):
-        print("show")
+        print("showRanking")
         score = data["ranking"] # dictionnary of scores for every player
         sorted_rank = sorted(score.items(), key = lambda x:x[1])
         self.ranking.destroy()
         self.ranking = Label(self.ranking_container)
         self.ranking.pack(side=LEFT)
+        self.B_action = {}
 
         for i in range(len(sorted_rank)):
             Label(self.ranking, text=str(i+1)).grid(row=i, column=0)
             Label(self.ranking, text=sorted_rank[i][0]).grid(row=i, column = 1)
             Label(self.ranking, text=sorted_rank[i][1]).grid(row=i, column = 2)
+            self.B_action[i] = lambda : connection.Send({"action":"launchGame", "players":(self.nickname, sorted_rank[i][0]), "confirmation":None})
+            Button(self.ranking, text=sorted_rank[i][0], command= self.B_action[i]).grid(row=i, column = 3)
+        for i in range(len(self.B_action)):
+            self.B_action[i]()
 
     def Network_startGame(self, data):
         """Start a game with a partner"""
@@ -91,8 +96,10 @@ class Client(ConnectionListener):
         print("Should start a game with {} and {}".format(player1, player2))
 
         if self.nickname == player1:
+            self.message({"messageType":"StartGame", "opponent":player2})
             self.state = PLAYING
         elif self.nickname == player2:
+            self.message({"messageType":"StartGame", "opponent":player1})
             self.state = WAITING
 
         self.game_ui = GUI(player1, player2)
@@ -117,6 +124,27 @@ class Client(ConnectionListener):
         self.game_ui.endGame()
         self.state = ACTIVE
 
+    def Network_message(self,data):
+        status = self.message(data)
+        if status != None:
+            connection.Send({"action":"launchGame", "players":[self.nickname, data["asker"]], "confirmation":status})
+
+    def message(self, data):
+        messageType = data["messageType"]
+        if messageType == "RatingGapTooHigh":
+            showinfo("Partie impossible", icon = "warning",
+            message = "Vous ne pouvez pas lancer une partie avec ce joueur car vous avez plus de 300 points d'écart.")
+        elif messageType == "StartGame":
+            showinfo("Partie lancée", icon = "info", message = "Partie lancée contre {} !".format(data["opponent"]))
+        elif messageType == "GameRefused":
+            showinfo("Partie refusée", icon = "info", message = "Partie refusée par {}.".format(data["opponent"]))
+        elif messageType == "AskLaunchGame":
+            """Ask acceptation of player2 to launch a game
+            because rating gap between the 2 players is higher than 200"""
+            if askyesno("Demande de partie", message="Voulez-vous lancer une partie contre {}".format(data["opponent"])):
+                return True
+            else:
+                return False
 
     def click(self, event):
         (x,y) = event.x, event.y
@@ -131,6 +159,7 @@ class Client(ConnectionListener):
                         print("Trying to select ", point.i, " ", point.j)
                     else:
                         self.game_ui.wrongSelection((point.i, point.j))
+
 
 #########################################################
 
