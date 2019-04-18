@@ -96,7 +96,7 @@ class GUI:
         self.currentPlayer = self.player1 if self.currentPlayer == self.player2 else self.player2
         self.setPlayerLabel()
 
-    def printEndGame(self):
+    def endGame(self):
         winner = self.player1 if self.currentPlayer == self.player2 else self.player2
         showinfo("Fin du jeu !", icon="info", message = winner + " a gagné !")
         self.window.destroy()
