@@ -128,20 +128,25 @@ class GameEngine:
         c,d = self.selected_points[1].i, self.selected_points[1].j
         e,f = self.selected_points[2].i, self.selected_points[2].j
 
-        if abs(a-c) == 2 and (b-d) == 0: self.grid[(c-a)//2 +a][b].mark_linked()
-        if (a-c) == 0 and abs(b-d) == 2: self.grid[a][(d-b)//2 + b].mark_linked()
-
-        if abs(c-e) == 2 and (d-f) == 0: self.grid[(e-c)//2 +c][d].mark_linked()
-        if (c-e) == 0 and abs(d-f) == 2: self.grid[c][(f-d)//2 + d].mark_linked()
+        if abs(a-c) == 2 and (b-d) == 0:
+            self.grid[(c-a)//2 +a][b].mark_linked()
+        if (a-c) == 0 and abs(b-d) == 2:
+            self.grid[a][(d-b)//2 + b].mark_linked()
+        if abs(c-e) == 2 and (d-f) == 0:
+            self.grid[(e-c)//2 +c][d].mark_linked()
+        if (c-e) == 0 and abs(d-f) == 2:
+            self.grid[c][(f-d)//2 + d].mark_linked()
 
         self.selected_points.clear()
 
-        if self.currentPlayer == self.player1 :
-            self.currentPlayer = self.player2
-        else:
-            self.currentPlayer = self.player1
+        if self.check_possible_moves():
+            if self.currentPlayer == self.player1 :
+                self.currentPlayer = self.player2
+            else:
+                self.currentPlayer = self.player1
+            return False
 
-        return self.check_possible_moves()
+        return True
 
 
 class Point:
