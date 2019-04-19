@@ -66,8 +66,6 @@ class GUI:
             return 1
         elif self.currentPlayer == self.player2:
             return 2
-        else:
-            raise ValueError("Cannot give the number of the current player")
 
     def setPlayerLabel(self):
         if self.currentPlayer == self.player1 :
@@ -80,7 +78,6 @@ class GUI:
     def setPointState(self, coords, state):
         """Change point state and set color accordingly"""
         global colors
-        print("setPointState called !",self.currentPlayer, coords,state)
         (i,j) = coords
         self.canvas.itemconfig(self.grid[i][j].rep, fill = colors[self.nbCurrentPlayer()][state])
 
@@ -91,16 +88,13 @@ class GUI:
         self.canvas.after(100, lambda : self.canvas.scale(rep, i*DIST+XMIN, j*DIST+YMIN, 1/1.5, 1/1.5))
 
     def changeCurrentPlayer(self):
-        print("change f*cking player")
         """Change the current player to who is the turn"""
         self.currentPlayer = self.player1 if self.currentPlayer == self.player2 else self.player2
         self.setPlayerLabel()
 
     def endGame(self):
-        winner = self.player1 if self.currentPlayer == self.player2 else self.player2
-        showinfo("Fin du jeu !", icon="info", message = winner + " a gagné !")
+        showinfo("Fin du jeu !", icon="info", message = self.currentPlayer + " a gagné !")
         self.window.destroy()
-
 
 class Point_rep:
     def __init__(self, i, j, rep):

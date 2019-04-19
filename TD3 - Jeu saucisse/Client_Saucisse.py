@@ -7,12 +7,8 @@ from sys import stdin, exit
 from PodSixNet.Connection import connection, ConnectionListener
 
 import tkinter as tk
+from tkinter import simpledialog
 from gui import *
-
-# INITAL WINDOW CONSTANTS
-WIDTH=300
-HEIGHT=200
-R=5
 
 # STATE CONSTANTS
 INITIAL = 0
@@ -21,27 +17,33 @@ DEAD = -1
 PLAYING = 2
 WAITING = 3
 
+CONNECTED = 1
+DISCONNECTED = -1
+
 class Client(ConnectionListener):
 
     def __init__(self, host, port):
-        interface = tk.LabelFrame(Window, text = "Jeu de la Saucisse - Serveur", padx=10, pady=10)
-        interface.pack()
+        self.window = tk.Tk()
+        self.window.withdraw() # hide main window
+        self.interface = tk.Frame(self.window, padx=10, pady=10)
+        self.interface.pack()
 
-        self.ranking_container = tk.LabelFrame(interface, text = "Classement", padx=10, pady=10)
-        # self.ranking_container.grid(row=0, column=0, sticky="new")
-        self.ranking_container.pack()
-        self.ranking = tk.Frame(self.ranking_container)
+        self.logo = tk.PhotoImage(file="logo_client.gif", format="gif")
+        tk.Label(self.interface, image=self.logo).pack()
 
-        print("Bienvenu au jeu de la saucise !")
+        print("Bienvenue au jeu de la saucisse !")
         print("Appuyez sur Ctrl-C pour fermer cette fenêtre")
-        print("Quel est votre prénom ? ")
-        nickname=str(stdin.readline().rstrip("\n"))
-        self.nickname=nickname
+        self.nickname = simpledialog.askstring("Jeu de la Saucisse", "Bienvenue au Jeu de la Saucisse ! \nQuel est votre prénom ?")
+        self.window.deiconify() # reveal the window
+
         self.Connect((host, port))
         self.state=INITIAL
-        connection.Send({"action": "nickname", "nickname": nickname})
-        # a single loop to send to the server my nickname
-        self.Loop()
+        connection.Send({"action": "nickname", "nickname": self.nickname})
+        self.Loop() # a single loop to send to the server my nickname
+
+        self.ranking_container = tk.LabelFrame(self.interface, text = "Classement", padx=10, pady=10)
+        self.ranking_container.pack()
+        self.ranking = tk.Frame(self.ranking_container)
 
     def Network_connected(self, data):
         print("Vous êtes maintenant connecté au serveur !")
@@ -58,41 +60,75 @@ class Client(ConnectionListener):
         self.state = ACTIVE
         self.Network_showRanking(data)
         while self.state != DEAD:
-            Window.update()
+            self.window.update()
             self.Loop()
             sleep(0.001)
         exit()
 
     def Network_error(self, data):
-        print('error:', data['error'][1])
+        print('Erreur :', data['error'][1])
+        connection.Close()
+
+    def Network_rejected(self, data):
+        print("Le tournoi a déjà démarré...")
         connection.Close()
 
     def Network_disconnected(self, data):
-        print('Server disconnected')
+        print('Serveur déconnecté')
         exit()
 
     def Network_showRanking(self,data):
-        print("show")
+        """ Update ranking display in the window """
         score = data["ranking"] # dictionnary of scores for every player
-        sorted_rank = sorted(score.items(), key = lambda x:x[1])
+        my_rating = score[self.nickname]["rating"]
+        my_state = score[self.nickname]["state"]
+        sorted_rank = sorted(score.items(), key = lambda x:x[1]["rating"], reverse=True)
         self.ranking.destroy()
         self.ranking = Label(self.ranking_container)
         self.ranking.pack(side=LEFT)
 
+        rank = 1
         for i in range(len(sorted_rank)):
-            Label(self.ranking, text=str(i+1)).grid(row=i, column=0)
-            Label(self.ranking, text=sorted_rank[i][0]).grid(row=i, column = 1)
-            Label(self.ranking, text=sorted_rank[i][1]).grid(row=i, column = 2)
+            nickname = sorted_rank[i][0]
+            rating = sorted_rank[i][1]["rating"]
+            state = sorted_rank[i][1]["state"]
+            if i>=1 and rating == sorted_rank[i-1][1]["rating"]:
+                Label(self.ranking, text="-").grid(row=i, column=0, padx=15)
+            else:
+                Label(self.ranking, text=str(rank)+".").grid(row=i, column=0, padx=15)
+                rank += 1
+
+            Label(self.ranking, text=nickname).grid(row=i, column = 1, padx=15)
+            Label(self.ranking, text=rating).grid(row=i, column = 2, padx=15)
+
+
+            if self.nickname != sorted_rank[i][0]:
+                if state == CONNECTED:
+                    tk.Label(self.ranking, bitmap="hourglass", bg="green").grid(row=i, column=3, padx=10)
+
+                    if my_state == CONNECTED:
+                        gap = abs(my_rating - rating)
+                        if gap < 300:
+                            if gap < 200:
+                                command = lambda name : lambda name=name : connection.Send({"action":"launchGame", "players":[self.nickname, name]})
+                            else:
+                                command = lambda name : lambda name=name : connection.Send({"action":"askGame", "players":[self.nickname, name]})
+                            Button(self.ranking, text="Défier !", command=command(nickname)).grid(row=i, column = 4, padx=20)
+                elif state == DISCONNECTED:
+                    tk.Label(self.ranking, bitmap="error", bg="red").grid(row=i, column=3, padx=10)
+                elif state == PLAYING:
+                    tk.Label(self.ranking, bitmap="questhead").grid(row=i, column=3, padx=10)
+
 
     def Network_startGame(self, data):
         """Start a game with a partner"""
         (player1, player2) = self.currentGamePartners = data["players"]
 
-        print("Should start a game with {} and {}".format(player1, player2))
-
         if self.nickname == player1:
+            showinfo("Partie lancée", icon = "info", message = "Partie lancée avec {}.".format(data["players"][1]))
             self.state = PLAYING
         elif self.nickname == player2:
+            showinfo("Partie lancée", icon = "info", message = "Partie lancée avec {}.".format(data["players"][0]))
             self.state = WAITING
 
         self.game_ui = GUI(player1, player2)
@@ -106,10 +142,12 @@ class Client(ConnectionListener):
         self.game_ui.wrongSelection(coords)
 
     def Network_endTurn(self,data):
-        """Finish current move and swap players"""
+        """Finish current move"""
         pointList = data["pointList"]
         for point in pointList:
             self.game_ui.setPointState(point, "linked")
+
+    def Network_swapPlayers(self, data):
         self.game_ui.changeCurrentPlayer()
         self.state = WAITING if self.state == PLAYING else PLAYING
 
@@ -117,6 +155,18 @@ class Client(ConnectionListener):
         self.game_ui.endGame()
         self.state = ACTIVE
 
+    def Network_askGame(self, data):
+        """Ask acceptation of player2 to launch a game
+        because rating gap between the 2 players is higher than 200"""
+        opponent = data["players"][1]
+
+        if askyesno("Demande de partie", message="Voulez-vous lancer une partie contre {} ?".format(opponent)):
+            connection.Send({"action":"launchGame", "players":data["players"]})
+        else:
+            connection.Send({"action":"declinedGame", "players":data["players"]})
+
+    def Network_declinedGame(self, data):
+        showinfo("Partie refusée", icon = "info", message = "Partie refusée par {}.".format(data["players"][1]))
 
     def click(self, event):
         (x,y) = event.x, event.y
@@ -128,9 +178,9 @@ class Client(ConnectionListener):
                     if self.state == PLAYING:
                         connection.Send({"action":"selectPoint", "nickname" : self.nickname,
                                 "partners": self.currentGamePartners, "pointCoords" : (point.i,point.j)})
-                        print("Trying to select ", point.i, " ", point.j)
                     else:
                         self.game_ui.wrongSelection((point.i, point.j))
+
 
 #########################################################
 
@@ -140,11 +190,7 @@ if len(sys.argv) != 2:
     exit()
 
 host, port = sys.argv[1].split(":")
-Window=tk.Tk()
 c = Client(host, int(port))
-Window.update()
-sleep(0.1)
-
-
+sleep(0.5)
 # first loop to say to the server that I exist
 c.Loop()
