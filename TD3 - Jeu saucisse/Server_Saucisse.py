@@ -150,8 +150,9 @@ class MyServer(Server):
 
     def DelPlayer(self, player):
         print("Supression du joueur " + player.nickname + ", "+ str(player.addr))
-        if len([p for p in self.players if p == player.nickname]) == 1:
-            self.rating[player.nickname]["state"] = DISCONNECTED
+        if len([p for p in self.players if p.nickname == player.nickname]) == 1:
+            if player.nickname in self.rating:
+                self.rating[player.nickname]["state"] = DISCONNECTED
         del self.players[player]
         self.PrintPlayers()
         self.showRanking()
