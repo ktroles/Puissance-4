@@ -58,10 +58,11 @@ class ClientChannel(Channel):
         column = data["column"]
 
         # Check wether the point can be selected or not, or ends a move
-        if s.games[partners].can_place_point(column) :
+        j = s.games[partners].can_place_point(column)
+        if type(j) is int :
             # Can be selected, send the information
             s.games[partners].place_jeton(column)
-            [p.Send({"action":"placePoint", "column": column}) for p in self._server.players if p.nickname in partners]
+            [p.Send({"action":"placePoint", "column": column, "line":j}) for p in self._server.players if p.nickname in partners]
             if s.games[partners].verifIfThereIsAWinner():
                 # Winner is currentPlayer
                 [p.Send({"action":"endGame"}) for p in self._server.players if p.nickname in partners]

@@ -19,7 +19,7 @@ class GameEngine:
         if i >= 0 and i < WIDTH:
             for j in reversed(range(HEIGHT)):
                 if self.grid[i][j] == VIDE:
-                    return True
+                    return j
         return False
 
     def nextPlayer(self):

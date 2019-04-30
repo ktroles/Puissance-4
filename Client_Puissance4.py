@@ -137,7 +137,8 @@ class Client(ConnectionListener):
 
     def Network_placePoint(self, data):
         column = data["column"]
-        self.game_ui.placePoint(data["column"])
+        line = data["line"]
+        self.game_ui.placePoint(column, line)
 
     def Network_wrongSelection(self, data):
         coords = data["pointCoords"]

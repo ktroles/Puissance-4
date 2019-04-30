@@ -62,19 +62,18 @@ class GUI:
             self.P1_label.config(background = self.colors["free"])
             self.P2_label.config(background = self.colors[self.player2])
 
-    def placePoint(self,column):
-        j = GRID_HEIGHT
-        for j in reversed(range(GRID_HEIGHT)):
-            if self.canvas.itemconfig(self.grid[column][j].rep)["fill"][-1] == self.colors["free"]:
-                self.canvas.itemconfig(self.grid[column][j].rep, fill = self.colors[self.currentPlayer])
-                return
-
+    def placePoint(self, column, line):
+        for j in range(line+1):
+            change_color = lambda j, color : lambda j=j, color=color : self.canvas.itemconfig(self.grid[column][j].rep, fill = color)
+            self.canvas.after((j)*100, change_color(j, self.colors[self.currentPlayer]))
+            if j != line:
+                self.canvas.after((j+1)*100, change_color(j, self.colors["free"]))
 
     def wrongSelection(self, coords):
         (i,j) = coords
         rep = self.grid[i][j].rep
-        self.canvas.scale(rep, i*DIST+XMIN, j*DIST+YMIN, 1.5, 1.5)
-        self.canvas.after(100, lambda : self.canvas.scale(rep, i*DIST+XMIN, j*DIST+YMIN, 1/1.5, 1/1.5))
+        self.canvas.scale(rep, i*DIST+XMIN, j*DIST+YMIN, 1.2, 1.2)
+        self.canvas.after(100, lambda : self.canvas.scale(rep, i*DIST+XMIN, j*DIST+YMIN, 1/1.2, 1/1.2))
 
     def changeCurrentPlayer(self):
         """Change the current player to who is the turn"""
