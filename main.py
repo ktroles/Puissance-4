@@ -1,4 +1,4 @@
-# coding  = Latin-1
+# coding  = utf-8
 from tkinter import *
 def mouse (evt):
     print(evt.keysym)
@@ -18,16 +18,11 @@ places = list()
 for i in range(7):
     liste = list()
     for j in range (6):
-        liste.append(C.create_oval(25+ i*100, 25 + j*100, 100 + 100*i, 100 + 100*j, outline = "blue", fill = "white"))
+        liste.append(C.create_oval(25+ i*100, 25 + j*100, 100 + 100*i, 100 + 100*j, outline = "blue", width=1.5, fill = "#fff9e9"))
     places.append(liste)
 
 menu = Frame(window)
 menu.pack(side = RIGHT)
 quitter = Button(menu, text= "Quitter", command = window.destroy)
-print(type(places[0][0]))
-print(C.places[0][0])
 
-print(places)
-
-places[6][5].bind('<Enter>',mouse)
 window.mainloop()
