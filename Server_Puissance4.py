@@ -98,11 +98,21 @@ class ClientChannel(Channel):
             print("Started a game with {} and {}".format(player1,player2))
 
     def Network_askGame(self, data):
+        player1 = data["players"][0]
         player2 = data["players"][1]
+        s.rating[player1]["state"] = PLAYING
+        s.rating[player2]["state"] = PLAYING
+        self._server.sendRanking()
+        self._server.showRanking()
         [p.Send({"action":"askGame", "players":data["players"]}) for p in self._server.players if p.nickname == player2]
 
     def Network_declinedGame(self, data):
         player1 = data["players"][0]
+        player2 = data["players"][1]
+        s.rating[player1]["state"] = CONNECTED
+        s.rating[player2]["state"] = CONNECTED
+        self._server.sendRanking()
+        self._server.showRanking()
         [p.Send({"action":"declinedGame", "players":data["players"]}) for p in self._server.players if p.nickname == player1]
 
 
