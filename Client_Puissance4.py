@@ -34,6 +34,8 @@ class Client(ConnectionListener):
         print("Bienvenue au jeu de la saucisse !")
         print("Appuyez sur Ctrl-C pour fermer cette fenêtre")
         self.nickname = simpledialog.askstring("Puissance 4", "Bienvenue au Puissance 4 ! \nQuel est votre prénom ?")
+        if self.nickname in [None, ""]:
+            exit()
         self.window.deiconify() # reveal the window
 
         self.Connect((host, port))

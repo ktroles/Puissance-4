@@ -9,7 +9,7 @@ GRID_WIDTH = 7
 GRID_HEIGHT = 6
 
 # GRAPHICAL CONSTANTS
-RADIUS = 30
+RADIUS = 20
 XMIN = 2*RADIUS
 YMIN = 2*RADIUS
 DIST = 2.8*RADIUS
@@ -95,5 +95,6 @@ class Point_rep:
         self.j = j
         self.rep = rep
 
-# gui = GUI("Fabien", "Killian")
-# gui.window.mainloop()
+if __name__ == '__main__':
+    gui = GUI("Fabien", "Killian")
+    gui.window.mainloop()
