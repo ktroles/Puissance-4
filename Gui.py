@@ -16,6 +16,9 @@ DIST = 2.8*RADIUS
 WIDTH = 2*XMIN + (GRID_WIDTH-1)*DIST
 HEIGHT = 2*YMIN + (GRID_HEIGHT-1)*DIST
 
+def do_nothing():
+    pass
+
 class GUI:
     def __init__(self, player1, player2):
         self.player1 = player1
@@ -24,6 +27,8 @@ class GUI:
 
         # Setup the window layout
         self.window = Tk()
+        self.window.title("Puissance 4 - Partie en cours")
+        self.window.protocol("WM_DELETE_WINDOW", do_nothing)
         self.controls = Frame(self.window, width = WIDTH)
         self.controls.pack()
         self.currentPlayer = player1

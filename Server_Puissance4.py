@@ -37,16 +37,14 @@ class ClientChannel(Channel):
         if self._server.tournament_state == WAITING_FOR_PLAYERS and self.nickname not in self._server.rating:
             self._server.rating[self.nickname] = {"rating":1000, "state":CONNECTED}
             self._server.PrintPlayers()
-            self.Send({"action":"start", "ranking":self._server.rating})
+            self.Send({"action":"start", "ranking":self._server.rating, "tournament_state":self._server.tournament_state})
             self._server.showRanking()
             self._server.sendRanking()
 
         elif self.nickname in self._server.rating and self._server.rating[self.nickname]["state"] != CONNECTED:
             self._server.rating[self.nickname]["state"] = CONNECTED
             self._server.PrintPlayers()
-            self.Send({"action":"start", "ranking":self._server.rating})
-            if self._server.tournament_state:
-                self.Send({"action":"startTournament"})
+            self.Send({"action":"start", "ranking":self._server.rating, "tournament_state":self._server.tournament_state})
             self._server.showRanking()
             self._server.sendRanking()
 
@@ -243,6 +241,7 @@ if len(sys.argv) != 2:
     print("e.g., python3", sys.argv[0], "localhost:31425")
 else:
     Window=tk.Tk()
+    Window.title("Puissance 4 - Serveur")
     host, port = sys.argv[1].split(":")
     s = MyServer(localaddr=(host, int(port)))
     s.Launch()

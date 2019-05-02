@@ -24,6 +24,7 @@ class Client(ConnectionListener):
 
     def __init__(self, host, port):
         self.window = tk.Tk()
+        self.window.title("Puissance 4 - Client")
         self.window.withdraw() # hide main window
         self.interface = tk.Frame(self.window, padx=10, pady=10)
         self.interface.pack()
@@ -65,6 +66,8 @@ class Client(ConnectionListener):
 
     def Network_start(self,data):
         self.state = ACTIVE
+        if data["tournament_state"]:
+            self.Network_startTournament(data)
         self.Network_showRanking(data)
         while self.state != DEAD:
             self.window.update()
