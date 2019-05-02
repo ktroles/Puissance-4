@@ -182,7 +182,9 @@ class MyServer(Server):
     def startTournament(self):
         if self.tournament_state != STARTED:
             self.tournament_state = STARTED
+        [p.Send({"action":"startTournament"}) for p in self.players]
         self.startTournament_b.config(text="Tournoi lancé")
+        self.sendRanking()
 
     def showRanking(self):
         """
@@ -214,8 +216,6 @@ class MyServer(Server):
                 tk.Label(self.ranking, bitmap="error", bg="red").grid(row=i, column=3, padx=10)
             elif state == PLAYING:
                 tk.Label(self.ranking, bitmap="questhead").grid(row=i, column=3, padx=10)
-
-
 
     def sendRanking(self):
         """Send updated ranking to every player"""

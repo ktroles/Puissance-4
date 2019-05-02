@@ -30,6 +30,10 @@ class Client(ConnectionListener):
 
         self.logo = tk.PhotoImage(file="logo_puissance_4.gif", format="gif")
         tk.Label(self.interface, image=self.logo).pack()
+        self.tournament_state = False # False if tournament is launched, True otherwise
+        self.tournament_state_label = tk.StringVar()
+        self.tournament_state_label.set("En attente des autres joueurs ...")
+        tk.Label(self.interface, textvariable=self.tournament_state_label).pack()
 
         print("Bienvenue au jeu de la saucisse !")
         print("Appuyez sur Ctrl-C pour fermer cette fenêtre")
@@ -108,7 +112,7 @@ class Client(ConnectionListener):
                 if state == CONNECTED:
                     tk.Label(self.ranking, bitmap="hourglass", bg="green").grid(row=i, column=3, padx=10)
 
-                    if my_state == CONNECTED:
+                    if my_state == CONNECTED and self.tournament_state:
                         gap = abs(my_rating - rating)
                         if gap < 300:
                             if gap < 200:
@@ -168,6 +172,13 @@ class Client(ConnectionListener):
 
     def Network_declinedGame(self, data):
         showinfo("Partie refusée", icon = "info", message = "Partie refusée par {}.".format(data["players"][1]))
+
+    def Network_startTournament(self, data):
+        showinfo("Le tournoi a commencé !", icon = "info", message = "Vous pouvez maintenant défier les autres joueurs")
+        self.tournament_state = True
+        self.tournament_state_label.set("Tournoi en cours")
+
+
 
     def click(self, event):
         (x,y) = event.x, event.y
