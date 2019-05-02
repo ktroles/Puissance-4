@@ -82,9 +82,9 @@ class GUI:
 
     def endGame(self, equality = False):
         if equality:
-            showinfo("Egalité", icon="info", message = "Votre score reste inchangé !")
+            showinfo("Egalité", icon="info", message = "Votre score reste inchangé !", parent=self.window)
         else:
-            showinfo("Fin du jeu", icon="info", message = self.currentPlayer + " a gagné !")
+            showinfo("Fin du jeu", icon="info", message = self.currentPlayer + " a gagné !", parent=self.window)
 
         self.window.destroy()
 

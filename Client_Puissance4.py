@@ -50,6 +50,7 @@ class Client(ConnectionListener):
         self.ranking_container = tk.LabelFrame(self.interface, text = "Classement", padx=10, pady=10)
         self.ranking_container.pack()
         self.ranking = tk.Frame(self.ranking_container)
+        self.Loop()
 
     def Network_connected(self, data):
         print("Vous êtes maintenant connecté au serveur !")
@@ -174,9 +175,10 @@ class Client(ConnectionListener):
         showinfo("Partie refusée", icon = "info", message = "Partie refusée par {}.".format(data["players"][1]))
 
     def Network_startTournament(self, data):
-        showinfo("Le tournoi a commencé !", icon = "info", message = "Vous pouvez maintenant défier les autres joueurs")
-        self.tournament_state = True
-        self.tournament_state_label.set("Tournoi en cours")
+        if not self.tournament_state:
+            showinfo("Le tournoi a commencé !", icon = "info", message = "Vous pouvez maintenant défier les autres joueurs")
+            self.tournament_state = True
+            self.tournament_state_label.set("Tournoi en cours")
 
 
 

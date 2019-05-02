@@ -45,6 +45,8 @@ class ClientChannel(Channel):
             self._server.rating[self.nickname]["state"] = CONNECTED
             self._server.PrintPlayers()
             self.Send({"action":"start", "ranking":self._server.rating})
+            if self._server.tournament_state:
+                self.Send({"action":"startTournament"})
             self._server.showRanking()
             self._server.sendRanking()
 
