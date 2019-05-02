@@ -120,7 +120,7 @@ class Client(ConnectionListener):
                         gap = abs(my_rating - rating)
                         if gap < 300:
                             if gap < 200:
-                                command = lambda name : lambda name=name : connection.Send({"action":"launchGame", "players":[self.nickname, name]})
+                                command = lambda name : lambda name=name : connection.Send({"action":"askWhoStart", "players":[self.nickname, name]})
                             else:
                                 command = lambda name : lambda name=name : connection.Send({"action":"askGame", "players":[self.nickname, name]})
                             Button(self.ranking, text="Défier !", command=command(nickname)).grid(row=i, column = 4, padx=20)
@@ -170,7 +170,7 @@ class Client(ConnectionListener):
         opponent = data["players"][0]
 
         if askyesno("Demande de partie", message="Voulez-vous lancer une partie contre {} ?".format(opponent)):
-            connection.Send({"action":"launchGame", "players":data["players"]})
+            connection.Send({"action":"askWhoStart", "players":data["players"]})
         else:
             connection.Send({"action":"declinedGame", "players":data["players"]})
 
@@ -183,6 +183,14 @@ class Client(ConnectionListener):
             self.tournament_state = True
             self.tournament_state_label.set("Tournoi en cours")
 
+    def Network_askBegin(self, data):
+        opponent = data["players"]
+        opponent.remove(self.nickname)
+        opponent = opponent[0]
+        if askyesno("Commencer ?", message="Voulez-vous commencer pour jouer contre {} ?".format(opponent)):
+            connection.Send({"action":"launchGame", "players":[self.nickname, opponent]})
+        else:
+            connection.Send({"action":"launchGame", "players":[opponent, self.nickname]})
 
 
     def click(self, event):

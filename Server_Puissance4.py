@@ -107,6 +107,17 @@ class ClientChannel(Channel):
         self._server.showRanking()
         [p.Send({"action":"askGame", "players":data["players"]}) for p in self._server.players if p.nickname == player2]
 
+    def Network_askWhoStart(self, data):
+        player1 = data["players"][0]
+        player2 = data["players"][1]
+        s.rating[player1]["state"] = PLAYING
+        s.rating[player2]["state"] = PLAYING
+        self._server.sendRanking()
+        self._server.showRanking()
+        random_player = choice(data["players"])
+        print(player1, player2, random_player)
+        [p.Send({"action":"askBegin", "players":data["players"]}) for p in self._server.players if p.nickname == random_player]
+
     def Network_declinedGame(self, data):
         player1 = data["players"][0]
         player2 = data["players"][1]
