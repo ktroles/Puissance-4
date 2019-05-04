@@ -67,7 +67,7 @@ class GUI:
             self.P1_label.config(background = self.colors["free"])
             self.P2_label.config(background = self.colors[self.player2])
 
-    def placePoint(self, column, line):
+    def placeToken(self, column, line):
         for j in range(line+1):
             change_color = lambda j, color : lambda j=j, color=color : self.canvas.itemconfig(self.grid[column][j].rep, fill = color)
             self.canvas.after((j)*100, change_color(j, self.colors[self.currentPlayer]))
@@ -98,7 +98,3 @@ class Point_rep:
         self.i = i
         self.j = j
         self.rep = rep
-
-if __name__ == '__main__':
-    gui = GUI("Fabien", "Killian")
-    gui.window.mainloop()

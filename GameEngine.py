@@ -15,7 +15,8 @@ class GameEngine:
         self.player2 = player2
         self.currentPlayer = player1
 
-    def can_place_point(self, i):
+    def canPlaceToken(self, i):
+        """Check if place is available in the selected column"""
         if i >= 0 and i < WIDTH:
             for j in reversed(range(HEIGHT)):
                 if self.grid[i][j] == VIDE:
@@ -25,40 +26,49 @@ class GameEngine:
     def nextPlayer(self):
         self.currentPlayer = (self.player1, self.player2)[self.currentPlayer == self.player1]
 
-    def place_jeton(self, i):
+    def placeToken(self, i):
+        """Place the token into the grid"""
         for j in reversed(range(HEIGHT)):
             if self.grid[i][j] == VIDE:
                 self.grid[i][j] = self.currentPlayer
                 return
-        print ("error, use can_place_point before")
+        print ("error, use canPlaceToken before")
 
     def gameIsOver(self):
         print('winner is : ', self.currentPlayer)
 
-    def checkIfWin(self, L):
+    def checkIf4InARow(self, L):
+        """Check if it is a 4 in a row vertically, horizontally, or diagonally"""
         for i in range(0,len(L) - 3):
             if reduce(lambda a,b: a&b, L[i:i+4]) != 0:
                 return True
         return False
 
-    def get10value(self, n):
+    def get10Value(self, n):
+        """Return 1 if it is the currentPlayer's token
+        Return 0 otherwise"""
         return int(n == self.currentPlayer)
 
-    def get10grid(self):
+    def get10Grid(self):
+        """Return a grid of 1 (currentPlayer's tokens)
+        and 0 (opponent's tokens or free points)"""
         newGrid = np.zeros((WIDTH,HEIGHT), dtype=int)
         for j in range(HEIGHT):
             for i in range(WIDTH):
-                newGrid[i][j] = self.get10value(self.grid[i][j])
+                newGrid[i][j] = self.get10Value(self.grid[i][j])
         return newGrid
 
     def remainingPoints(self):
+        """Check if some points still be playable (free)
+        Thus, check if game is finished or not"""
         for i in range(WIDTH):
             if self.grid[i][0] == VIDE:
                 return True
         return False
 
-    def verifIfThereIsAWinner(self):
-        grid2 = self.get10grid()
+    def checkIfWinner(self):
+        """Check if the the currentPlayer has won"""
+        grid2 = self.get10Grid()
         L1 = []
         for i in range(WIDTH):
             L1.append(int(''.join(map(str, grid2[i])), 2))
@@ -69,7 +79,7 @@ class GameEngine:
         L3 = [L1[i] << i for i in range(len(L1))]
         L4 = [L1[HEIGHT-i] << i for i in range(len(L1))]
 
-        if (self.checkIfWin(L1) or self.checkIfWin(L2) or self.checkIfWin(L3) or self.checkIfWin(L4)):
+        if (self.checkIf4InARow(L1) or self.checkIf4InARow(L2) or self.checkIf4InARow(L3) or self.checkIf4InARow(L4)):
             return True
         else:
             self.nextPlayer()
@@ -89,10 +99,10 @@ if __name__ == "__main__":
     Game = GameEngine("abc","def")
     while True:
         n = int(input())
-        if Game.can_place_point(n):
-            Game.place_jeton(n)
+        if Game.canPlaceToken(n):
+            Game.placeToken(n)
         else:
             print("Impossible de jouer dans la colonne {}".format(n))
         Game.printGrid()
-        if Game.verifIfThereIsAWinner():
+        if Game.checkIfWinner():
             Game.gameIsOver()

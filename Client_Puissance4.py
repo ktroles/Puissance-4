@@ -36,7 +36,7 @@ class Client(ConnectionListener):
         self.tournament_state_label.set("En attente des autres joueurs ...")
         tk.Label(self.interface, textvariable=self.tournament_state_label).pack()
 
-        print("Bienvenue au jeu de la saucisse !")
+        print("Bienvenue au jeu du Puissace 4 !")
         print("Appuyez sur Ctrl-C pour fermer cette fenêtre")
         self.nickname = simpledialog.askstring("Puissance 4", "Bienvenue au Puissance 4 ! \nQuel est votre prénom ?")
         if self.nickname in [None, ""]:
@@ -143,10 +143,10 @@ class Client(ConnectionListener):
         self.game_ui = GUI(player1, player2)
         self.game_ui.canvas.bind("<Button-1>", self.click)
 
-    def Network_placePoint(self, data):
+    def Network_placeToken(self, data):
         column = data["column"]
         line = data["line"]
-        self.game_ui.placePoint(column, line)
+        self.game_ui.placeToken(column, line)
 
     def Network_wrongSelection(self, data):
         coords = data["pointCoords"]
@@ -194,6 +194,7 @@ class Client(ConnectionListener):
 
 
     def click(self, event):
+        """Receive clicks on the grid"""
         (x,y) = event.x, event.y
         a = self.game_ui.canvas.find_overlapping(x, y, x, y)
         if len(a) == 1:

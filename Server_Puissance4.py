@@ -58,12 +58,12 @@ class ClientChannel(Channel):
         column = data["column"]
 
         # Check wether the point can be selected or not, or ends a move
-        j = s.games[partners].can_place_point(column)
+        j = s.games[partners].canPlaceToken(column)
         if type(j) is int :
             # Can be selected, send the information
-            s.games[partners].place_jeton(column)
-            [p.Send({"action":"placePoint", "column": column, "line":j}) for p in self._server.players if p.nickname in partners]
-            if s.games[partners].verifIfThereIsAWinner():
+            s.games[partners].placeToken(column)
+            [p.Send({"action":"placeToken", "column": column, "line":j}) for p in self._server.players if p.nickname in partners]
+            if s.games[partners].checkIfWinner():
                 # Winner is currentPlayer
                 [p.Send({"action":"endGame"}) for p in self._server.players if p.nickname in partners]
                 winner = s.games[partners].currentPlayer
@@ -99,6 +99,9 @@ class ClientChannel(Channel):
             print("Started a game with {} and {}".format(player1,player2))
 
     def Network_askGame(self, data):
+        """When someone asks for a game against an opponent
+        with more than 200 pts score difference,
+        ask the opponent if he is OK to start a game"""
         player1 = data["players"][0]
         player2 = data["players"][1]
         s.rating[player1]["state"] = PLAYING
@@ -108,6 +111,7 @@ class ClientChannel(Channel):
         [p.Send({"action":"askGame", "players":data["players"]}) for p in self._server.players if p.nickname == player2]
 
     def Network_askWhoStart(self, data):
+        """Ask randomly to one of the 2 players if he wants to start"""
         player1 = data["players"][0]
         player2 = data["players"][1]
         s.rating[player1]["state"] = PLAYING
@@ -119,6 +123,8 @@ class ClientChannel(Channel):
         [p.Send({"action":"askBegin", "players":data["players"]}) for p in self._server.players if p.nickname == random_player]
 
     def Network_declinedGame(self, data):
+        """Send the asking player that the opponent
+        refused the game"""
         player1 = data["players"][0]
         player2 = data["players"][1]
         s.rating[player1]["state"] = CONNECTED
@@ -198,9 +204,7 @@ class MyServer(Server):
         self.sendRanking()
 
     def showRanking(self):
-        """
-        Update ranking display in the window
-        """
+        """Update ranking display in the window"""
         self.ranking.destroy()
         self.ranking = tk.Frame(self.ranking_container)
         self.ranking.pack(side=tk.LEFT)
