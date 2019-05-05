@@ -242,6 +242,8 @@ class MyServer(Server):
         p = self.rating[loser]["rating"]
 
         score = int((100 - (g-p)/3))
+        if score == 0 :
+            score = 1
 
         self.rating[winner]["rating"] = g + score
         self.rating[loser]["rating"] = p - score
